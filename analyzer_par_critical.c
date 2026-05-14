@@ -43,30 +43,34 @@ void processar_logs(HashTable *ht, const char *log_path) {
         fprintf(stderr, "Erro ao abrir o log %s.\n", log_path);
         exit(EXIT_FAILURE);
     }
+    #pragma omp parallel
+    {
+        char line[1024];
+        char method[16], url[256], protocol[16];
 
-    char line[1024];
-    char method[16], url[256], protocol[16];
-
-    // Le as linhas 
-    #pragma omp critical
-    while (fgets(line, sizeof(line), file) != NULL) {
-        
-        // A URL está entre aspas, então localizamos a primeira ocorrência de aspas e usamos sscanf para extrair os campos
-        char *req_start = strchr(line, '"');
-        if (req_start != NULL) {
-            if (sscanf(req_start + 1, "%15s %255s %15s", method, url, protocol) == 3) {        
-                // Cache Node localiza a URL na tabela hash
-                CacheNode *node = ht_get(ht, url);
-                
-                {
-                // Se a achar a URL, incrementa o contador de hits
-                    if (node != NULL) {
-                        node->hit_count++;
+        // Le as linhas 
+        while (fgets(line, sizeof(line), file) != NULL) {
+            #pragma omp critical
+            {
+                // A URL está entre aspas, então localizamos a primeira ocorrência de aspas e usamos sscanf para extrair os campos
+                char *req_start = strchr(line, '"');
+                if (req_start != NULL) {
+                    if (sscanf(req_start + 1, "%15s %255s %15s", method, url, protocol) == 3) {        
+                        // Cache Node localiza a URL na tabela hash
+                        CacheNode *node = ht_get(ht, url);
+                        {
+                        // Se a achar a URL, incrementa o contador de hits
+                            if (node != NULL) {
+                                node->hit_count++;
+                            }
+                        }    
                     }
-                }    
+                }
             }
+            
         }
     }
+    
     fclose(file);
 }
 
@@ -87,7 +91,6 @@ int main(int argc, char *argv[]) {
     processar_logs(tabela, log_file);
 
     ht_save_results(tabela, "results.csv");
-
 
     ht_destroy(tabela);
 
