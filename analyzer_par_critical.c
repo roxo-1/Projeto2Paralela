@@ -48,6 +48,7 @@ void processar_logs(HashTable *ht, const char *log_path) {
     char method[16], url[256], protocol[16];
 
     // Le as linhas 
+    #pragma omp critical
     while (fgets(line, sizeof(line), file) != NULL) {
         
         // A URL está entre aspas, então localizamos a primeira ocorrência de aspas e usamos sscanf para extrair os campos
@@ -56,7 +57,7 @@ void processar_logs(HashTable *ht, const char *log_path) {
             if (sscanf(req_start + 1, "%15s %255s %15s", method, url, protocol) == 3) {        
                 // Cache Node localiza a URL na tabela hash
                 CacheNode *node = ht_get(ht, url);
-                #pragma omp critical
+                
                 {
                 // Se a achar a URL, incrementa o contador de hits
                     if (node != NULL) {
