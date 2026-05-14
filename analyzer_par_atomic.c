@@ -11,6 +11,8 @@ Pedro Gabriel Guimarães Fernandes - 10437465*/
 
 // Tamanho do Hash
 #define HASH_SIZE 131071
+#define MAX_LINES 100000
+#define MAX_LINE 1024
 
 HashTable* construir_tabela_manifest(const char *manifest_path) {
     // Inicializa a tabela com o tamanho do hash
@@ -44,34 +46,37 @@ void processar_logs(HashTable *ht, const char *log_path) {
         exit(EXIT_FAILURE);
     }
 
-    char line[1024];
+    
+    char linhas[MAX_LINES][MAX_LINE];
+    int total_linhas = 0;
+
+    while(fgets(linhas[total_linhas], sizeof(linhas[0]), file) != NULL){
+        total_linhas++;
+    }
+
     char method[16], url[256], protocol[16];
 
+    fclose(file);
+
     // Le as linhas 
-    #pragma omp parallel
-    {
-        while (fgets(line, sizeof(line), file) != NULL) {
+    #pragma omp parallel for 
+    for (int i = 0; i < total_linhas; i++) {
         
-            // A URL está entre aspas, então localizamos a primeira ocorrência de aspas e usamos sscanf para extrair os campos
-            char *req_start = strchr(line, '"');
-            if (req_start != NULL) {
-                if (sscanf(req_start + 1, "%15s %255s %15s", method, url, protocol) == 3) {
-                    
-                    // Cache Node localiza a URL na tabela hash
-                    CacheNode *node = ht_get(ht, url);
-                    // Se a achar a URL, incrementa o contador de hits
-                    if(node != NULL) {
-                        #pragma omp atomic update
-                        node->hit_count++;
-                    }
-                    
-                }
+        // A URL está entre aspas, então localizamos a primeira ocorrência de aspas e usamos sscanf para extrair os campos
+        char *req_start = strchr(linhas[i], '"');
+        if (req_start != NULL) {
+            if (sscanf(req_start + 1, "%15s %255s %15s", method, url, protocol) == 3) {
+                        
+                // Cache Node localiza a URL na tabela hash
+                CacheNode *node = ht_get(ht, url);
+                // Se a achar a URL, incrementa o contador de hits
+                if(node != NULL) {
+                    #pragma omp atomic update
+                    node->hit_count++;
+                }    
             }
         }
     }
-    
-
-    fclose(file);
 }
 
 int main(int argc, char *argv[]) {
