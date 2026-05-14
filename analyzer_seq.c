@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_table.h"
+#include <time.h>
 
 // Tamanho do Hash
 #define HASH_SIZE 131071
@@ -73,6 +74,7 @@ int main(int argc, char *argv[]) {
     const char *log_file = argv[1];
     const char *manifest_file = "manifest.txt"; // Nome fixo exigido pelo projeto
     
+    clock_t inicio = clock();
     HashTable *tabela = construir_tabela_manifest(manifest_file);
 
     processar_logs(tabela, log_file);
@@ -81,5 +83,8 @@ int main(int argc, char *argv[]) {
 
 
     ht_destroy(tabela);
+    clock_t fim = clock();
+    double tempo_gasto = (double)(fim - inicio) / CLOCKS_PER_SEC;
+    printf("Tempo gasto: %.2f segundos\n", tempo_gasto);
     return EXIT_SUCCESS;
 }
