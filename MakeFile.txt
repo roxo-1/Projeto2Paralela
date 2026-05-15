@@ -1,0 +1,47 @@
+# /*Carolina Lee - 10440304
+# Enrique Cipolla Martins - 10427834
+# Pedro Gabriel Guimarães Fernandes - 10437465
+# Variáveis de Compilação
+CC = gcc
+CFLAGS = -O2 -Wall -fopenmp
+LIBS = -lm
+
+# Nomes dos Executáveis
+TARGET_ATOMIC   = analyzer_par_atomic
+TARGET_CRITICAL = analyzer_par_critical
+TARGET_LOCK     = analyzer_par_lock
+TARGET_PADDED   = analyzer_par_atomic_padded
+
+# Arquivos Fonte Comuns
+COMMON_SRC = hash_table.c
+
+# Regra Principal: Compila todos
+all: $(TARGET_ATOMIC) $(TARGET_CRITICAL) $(TARGET_LOCK) $(TARGET_PADDED)
+
+# Compilação da Versão Atomic
+$(TARGET_ATOMIC): analyzer_par_atomic.c $(COMMON_SRC)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+# Compilação da Versão Critical
+$(TARGET_CRITICAL): analyzer_par_critical.c $(COMMON_SRC)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+# Compilação da Versão Lock (Granularidade Média)
+$(TARGET_LOCK): analyzer_par_lock.c $(COMMON_SRC)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+# Compilação da Versão Padded (Usa a flag -DPADDING para modificar a struct)
+$(TARGET_PADDED): analyzer_par_atomic.c $(COMMON_SRC)
+	$(CC) $(CFLAGS) -DPADDING $^ -o $@ $(LIBS)
+
+# Limpeza dos arquivos temporários e executáveis
+clean:
+	rm -f $(TARGET_ATOMIC) $(TARGET_CRITICAL) $(TARGET_LOCK) $(TARGET_PADDED) *.o results.csv
+
+# Atalho para rodar (Exemplo com 8 threads)
+run:
+	export OMP_NUM_THREADS=8; ./$(TARGET_ATOMIC) log_distribuido.txt
+
+# make
+# make analyzer_par_lock
+# make clean
